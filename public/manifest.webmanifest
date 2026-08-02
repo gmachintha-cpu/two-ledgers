@@ -1,0 +1,10 @@
+{
+  "name": "Two Ledgers",
+  "short_name": "Two Ledgers",
+  "description": "Household finance tracker for two",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#F2F4F1",
+  "theme_color": "#1E2A2E",
+  "icons": []
+}

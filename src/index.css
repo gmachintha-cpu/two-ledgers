@@ -1,0 +1,49 @@
+@import "tailwindcss";
+
+@theme {
+  --font-display: "Fraunces", serif;
+  --font-body: "Inter", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+
+  --color-paper: #F2F4F1;
+  --color-card: #FBFBF9;
+  --color-ink: #1E2A2E;
+  --color-ink-soft: #5B6A66;
+  --color-ink-faint: #8B9793;
+  --color-line: #DBE1DB;
+  --color-line-strong: #C3CBC3;
+
+  --color-income: #1F6F5C;
+  --color-income-soft: #E4EFEB;
+  --color-expense: #A94A3D;
+  --color-expense-soft: #F3E7E4;
+  --color-gold: #B08A3E;
+  --color-gold-soft: #F1E9D6;
+
+  --color-mine: #3B6E9A;
+  --color-mine-soft: #E5EDF3;
+  --color-hers: #8A4E8C;
+  --color-hers-soft: #F0E5F0;
+}
+
+html, body {
+  background: var(--color-paper);
+  color: var(--color-ink);
+  font-family: var(--font-body);
+}
+
+.font-display { font-family: var(--font-display); }
+.font-mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+
+.ledger-rule {
+  border-bottom: 1px solid var(--color-line);
+}
+
+::selection {
+  background: var(--color-gold-soft);
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-line-strong) transparent;
+}
