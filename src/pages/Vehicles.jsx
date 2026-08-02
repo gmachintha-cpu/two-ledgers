@@ -1,14 +1,18 @@
 import { useMemo } from "react";
 import { useData } from "../context/DataContext";
 import { formatMoney, formatDate } from "../lib/format";
+import { getExpenseCycle } from "../lib/payPeriod";
+import MonthSwitcher from "../components/MonthSwitcher";
 
-export default function Vehicles() {
+export default function Vehicles({ viewDate, onChangeMonth }) {
   const { vehicles, transactions, categoryById, fuelLogs } = useData();
+  const cycle = getExpenseCycle(viewDate);
 
   const withTotals = useMemo(() => {
     return vehicles.map((v) => {
-      const txs = transactions
-        .filter((t) => t.vehicle_id === v.id)
+      const allTxs = transactions.filter((t) => t.vehicle_id === v.id);
+      const txs = allTxs
+        .filter((t) => t.date.slice(0, 7) === cycle.key)
         .sort((a, b) => new Date(b.date) - new Date(a.date));
       const total = txs.reduce((sum, t) => sum + t.amount, 0);
       const byType = {};
@@ -17,7 +21,9 @@ export default function Vehicles() {
         byType[name] = (byType[name] || 0) + t.amount;
       });
 
-      const fills = fuelLogs
+      // km/l needs the FULL fill history in odometer order to stay accurate
+      // across a month boundary — only the displayed list gets filtered down.
+      const allFills = fuelLogs
         .filter((f) => f.vehicle_id === v.id)
         .sort((a, b) => a.odometer - b.odometer)
         .map((f, i, arr) => {
@@ -25,8 +31,9 @@ export default function Vehicles() {
           const km = prev ? f.odometer - prev.odometer : null;
           const kml = km && km > 0 ? +(km / f.liters).toFixed(1) : null;
           return { ...f, km, kml };
-        })
-        .reverse();
+        });
+
+      const fills = allFills.filter((f) => f.date.slice(0, 7) === cycle.key).reverse();
 
       const avgKml = (() => {
         const withKml = fills.filter((f) => f.kml);
@@ -36,11 +43,14 @@ export default function Vehicles() {
 
       return { ...v, txs, total, byType, fills, avgKml };
     });
-  }, [vehicles, transactions, categoryById, fuelLogs]);
+  }, [vehicles, transactions, categoryById, fuelLogs, cycle.key]);
 
   return (
     <div className="space-y-6">
       <h2 className="font-display text-lg text-(--color-ink)">Vehicles</h2>
+
+      <MonthSwitcher viewDate={viewDate} onChange={onChangeMonth} label={cycle.label.split(" ").pop() + " " + viewDate.getFullYear()} />
+
       {withTotals.map((v) => (
         <div key={v.id} className="border border-(--color-line) rounded-xl bg-(--color-card) overflow-hidden">
           <div className="px-4 py-3.5 flex items-baseline justify-between ledger-rule">
@@ -90,7 +100,7 @@ export default function Vehicles() {
 
           <div className="divide-y divide-(--color-line)">
             {v.txs.length === 0 && (
-              <p className="px-4 py-5 text-sm text-(--color-ink-faint) text-center">No expenses logged for this vehicle yet.</p>
+              <p className="px-4 py-5 text-sm text-(--color-ink-faint) text-center">No expenses logged for this vehicle this month.</p>
             )}
             {v.txs.map((t) => (
               <div key={t.id} className="px-4 py-3 flex items-center justify-between">

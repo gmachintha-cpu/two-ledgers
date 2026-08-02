@@ -37,9 +37,9 @@ function Router({ view, setView, editingTx, setEditingTx, viewDate, setViewDate 
         />
       );
     case "vehicles":
-      return <Vehicles />;
+      return <Vehicles viewDate={viewDate} onChangeMonth={setViewDate} />;
     case "networth":
-      return <NetWorth />;
+      return <NetWorth viewDate={viewDate} onChangeMonth={setViewDate} />;
     case "budgets":
       return <Budgets />;
     default:

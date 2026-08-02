@@ -3,6 +3,7 @@ import { useData } from "../context/DataContext";
 import { formatMoney } from "../lib/format";
 import { monthKey, getExpenseCycle } from "../lib/payPeriod";
 import { getOverspendAlerts, getProjectedMonthEndSpend, detectRecurringCategories, projectAmount } from "../lib/forecast";
+import MonthSwitcher from "../components/MonthSwitcher";
 
 function AccountRow({ account, isLiability }) {
   const { updateAccount, transactions, categoryById } = useData();
@@ -139,10 +140,11 @@ function AddAccountForm({ type, users, onAdd, onClose }) {
   );
 }
 
-export default function NetWorth() {
+export default function NetWorth({ viewDate, onChangeMonth }) {
   const { accounts, users, transactions, categoryById, budgets, addAccount, getOpeningBalance, spendByUserInMonth } = useData();
-  const cycle = getExpenseCycle();
-  const key = monthKey();
+  const cycle = getExpenseCycle(viewDate);
+  const key = cycle.key;
+  const isCurrentMonth = key === getExpenseCycle().key;
   const [addingType, setAddingType] = useState(null);
 
   const assetAccounts = accounts.filter((a) => a.type !== "liability");
@@ -157,6 +159,7 @@ export default function NetWorth() {
   const monthExpense = transactions
     .filter((t) => categoryById[t.category_id]?.type === "expense" && t.date.slice(0, 7) === key)
     .reduce((s, t) => s + t.amount, 0);
+  const monthNet = monthIncome - monthExpense;
 
   const alerts = useMemo(() => getOverspendAlerts({ transactions, categoryById, budgets }), [transactions, categoryById, budgets]);
   const projectedSpend = useMemo(() => getProjectedMonthEndSpend({ transactions, categoryById }), [transactions, categoryById]);
@@ -164,9 +167,10 @@ export default function NetWorth() {
 
   // Both pay days always fall within the month (10th and 30th), so by
   // month-end both salaries have landed regardless of today's date.
+  const currentMonthKey = monthKey();
   const projectedBalance = users.reduce((sum, u) => {
-    const opening = getOpeningBalance(u.id, key);
-    const projectedUserSpend = projectAmount(spendByUserInMonth(u.id, key));
+    const opening = getOpeningBalance(u.id, currentMonthKey);
+    const projectedUserSpend = projectAmount(spendByUserInMonth(u.id, currentMonthKey));
     return sum + opening + (u.salary || 0) - projectedUserSpend;
   }, 0);
 
@@ -175,7 +179,7 @@ export default function NetWorth() {
       <h2 className="font-display text-lg text-(--color-ink)">Net worth</h2>
 
       <div className="border border-(--color-line) rounded-xl bg-(--color-card) p-4">
-        <p className="text-[10px] uppercase tracking-wider text-(--color-ink-faint) font-mono">Net worth today</p>
+        <p className="text-[10px] uppercase tracking-wider text-(--color-ink-faint) font-mono">Net worth — current balance</p>
         <p className="font-display text-2xl mt-1 text-(--color-ink)">{formatMoney(netWorth)}</p>
         <div className="flex gap-4 mt-2">
           <span className="text-xs" style={{ color: "var(--color-income)" }}>
@@ -185,11 +189,23 @@ export default function NetWorth() {
             Liabilities {formatMoney(totalLiabilities)}
           </span>
         </div>
+        <p className="text-[10px] text-(--color-ink-faint) mt-2">
+          This is today's live balance, not tied to the month below — Two Ledgers doesn't keep a monthly history of
+          your balances yet, so there's no net-worth trend line to show. Ask if you'd like that added; it needs a
+          monthly snapshot to build from here on.
+        </p>
       </div>
 
       <div>
-        <h3 className="text-xs uppercase tracking-wider text-(--color-ink-faint) font-mono mb-1.5">Cashflow quadrant</h3>
-        <div className="border border-(--color-line) rounded-xl bg-(--color-card) grid grid-cols-2 overflow-hidden">
+        <div className="flex items-center justify-between mb-1.5">
+          <h3 className="text-xs uppercase tracking-wider text-(--color-ink-faint) font-mono">Cashflow quadrant</h3>
+        </div>
+        <MonthSwitcher
+          viewDate={viewDate}
+          onChange={onChangeMonth}
+          label={cycle.label.split(" ").pop() + " " + viewDate.getFullYear()}
+        />
+        <div className="border border-(--color-line) rounded-xl bg-(--color-card) grid grid-cols-2 overflow-hidden mt-2">
           <div className="p-3 border-r border-b border-(--color-line)" style={{ background: "var(--color-income-soft)" }}>
             <p className="text-[10px] uppercase tracking-wide" style={{ color: "var(--color-income)" }}>Income</p>
             <p className="font-mono text-sm text-(--color-ink) mt-1">{formatMoney(monthIncome)}</p>
@@ -207,8 +223,22 @@ export default function NetWorth() {
             <p className="font-mono text-sm text-(--color-ink) mt-1">{formatMoney(totalLiabilities)}</p>
           </div>
         </div>
+        <div className="flex items-center justify-between mt-2 px-1">
+          <span className="text-[11px] text-(--color-ink-faint)">
+            {cycle.label} net (income − expense)
+          </span>
+          <span
+            className="font-mono text-xs font-medium"
+            style={{ color: monthNet >= 0 ? "var(--color-income)" : "var(--color-expense)" }}
+          >
+            {monthNet >= 0 ? "+" : ""}
+            {formatMoney(monthNet)}
+          </span>
+        </div>
         <p className="text-[10px] text-(--color-ink-faint) mt-1.5">
-          Assets generate income; liabilities generate expense (interest) — that link shows on each account below.
+          Income/Expenses above follow the month you're viewing — flip back a few months to see whether you're
+          consistently spending less than you earn. Assets/Liabilities are today's balance either way, since those
+          aren't tracked historically yet.
         </p>
       </div>
 
@@ -252,32 +282,34 @@ export default function NetWorth() {
         </div>
       </div>
 
-      <div>
-        <h3 className="text-xs uppercase tracking-wider text-(--color-ink-faint) font-mono mb-1.5">
-          Forecast — {cycle.label}
-        </h3>
-        <div className="border rounded-xl p-3.5 space-y-2.5" style={{ background: "var(--color-gold-soft)", borderColor: "#E3D6AE" }}>
-          {alerts.length === 0 && (
-            <p className="text-xs" style={{ color: "var(--color-gold)" }}>
-              No categories on pace to overspend right now.
-            </p>
-          )}
-          {alerts.slice(0, 3).map((a) => (
-            <p key={a.id} className="text-xs" style={{ color: "var(--color-gold)" }}>
-              On pace to overspend <strong>{a.name}</strong> by {formatMoney(a.overBy)}
-            </p>
-          ))}
-          <div className="h-px" style={{ background: "#E3D6AE" }} />
-          <div className="flex justify-between text-[11px]" style={{ color: "var(--color-gold)" }}>
-            <span>Projected month-end spend</span>
-            <span className="font-mono">{formatMoney(projectedSpend)}</span>
-          </div>
-          <div className="flex justify-between text-[11px]" style={{ color: "var(--color-gold)" }}>
-            <span>Projected combined balance, month end</span>
-            <span className="font-mono">{formatMoney(projectedBalance)}</span>
+      {isCurrentMonth && (
+        <div>
+          <h3 className="text-xs uppercase tracking-wider text-(--color-ink-faint) font-mono mb-1.5">
+            Forecast — {cycle.label}
+          </h3>
+          <div className="border rounded-xl p-3.5 space-y-2.5" style={{ background: "var(--color-gold-soft)", borderColor: "#E3D6AE" }}>
+            {alerts.length === 0 && (
+              <p className="text-xs" style={{ color: "var(--color-gold)" }}>
+                No categories on pace to overspend right now.
+              </p>
+            )}
+            {alerts.slice(0, 3).map((a) => (
+              <p key={a.id} className="text-xs" style={{ color: "var(--color-gold)" }}>
+                On pace to overspend <strong>{a.name}</strong> by {formatMoney(a.overBy)}
+              </p>
+            ))}
+            <div className="h-px" style={{ background: "#E3D6AE" }} />
+            <div className="flex justify-between text-[11px]" style={{ color: "var(--color-gold)" }}>
+              <span>Projected month-end spend</span>
+              <span className="font-mono">{formatMoney(projectedSpend)}</span>
+            </div>
+            <div className="flex justify-between text-[11px]" style={{ color: "var(--color-gold)" }}>
+              <span>Projected combined balance, month end</span>
+              <span className="font-mono">{formatMoney(projectedBalance)}</span>
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {recurring.length > 0 && (
         <div>
