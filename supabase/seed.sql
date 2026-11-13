@@ -35,11 +35,11 @@ insert into subscriptions (name, amount, billing_day, category_id)
   select 'Claude', 6000, 28, id from categories where name = 'Subscriptions';
 
 insert into quick_tiles (kind, label, icon, category_id, vehicle_id, default_vehicle_id, fuel_type, default_amount, payer_id, shared, notes, sort_order)
-  select 'instant', 'Parking', 'parking',
-    (select id from categories where name = 'Parking'),
-    (select id from vehicles where name = 'Car'),
-    null, null, 700,
-    (select id from users where name = 'Husband'), false, 'Parking', 1
+  select 'instant', 'Metro', 'bus',
+    (select id from categories where name = 'Transport'),
+    null,
+    null, null, 300,
+    (select id from users where name = 'Husband'), false, 'Metro bus — to work', 1
   union all
   select 'fuel', 'Fuel Super', 'gas-station',
     (select id from categories where name = 'Fuel'),
@@ -57,7 +57,7 @@ insert into quick_tiles (kind, label, icon, category_id, vehicle_id, default_veh
   union all
   select 'instant', 'NAN 3', 'bottle',
     (select id from categories where name = 'Child'),
-    null, null, null, 2000,
+    null, null, null, 2200,
     (select id from users where name = 'Husband'), true, 'NAN 3 milk powder', 4
   union all
   select 'instant', 'Tuk Tuk', 'car',
