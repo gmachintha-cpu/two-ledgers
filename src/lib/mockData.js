@@ -122,10 +122,10 @@ export const subscriptions = [
 // with these defaults; "fuel" tiles open the fuel form instead since
 // they need liters + odometer. Editable from Budgets.
 export const quickTiles = [
-  { id: "qt1", kind: "instant", label: "Parking", icon: "parking", category_id: "c13d", vehicle_id: "v1", default_amount: 700, payer_id: "u1", shared: false, notes: "Parking" },
+ { id: "qt1", kind: "instant", label: "Metro", icon: "bus", category_id: "c22", vehicle_id: null, default_amount: 300, payer_id: "u2", shared: false, notes: "Metro bus — to work" },
   { id: "qt2", kind: "fuel", label: "Fuel Super", icon: "gas-station", fuel_type: "super", category_id: "c13a", default_vehicle_id: "v1", payer_id: "u1" },
   { id: "qt3", kind: "fuel", label: "Fuel Regular", icon: "gas-station", fuel_type: "regular", category_id: "c13a", default_vehicle_id: "v1", payer_id: "u1" },
-  { id: "qt4", kind: "instant", label: "NAN 3", icon: "bottle", category_id: "c12", vehicle_id: null, default_amount: 2000, payer_id: "u1", shared: true, notes: "NAN 3 milk powder" },
+ { id: "qt4", kind: "instant", label: "NAN 3", icon: "bottle", category_id: "c12", vehicle_id: null, default_amount: 2200, payer_id: "u1", shared: true, notes: "NAN 3 milk powder" },
   { id: "qt5", kind: "instant", label: "Tuk Tuk", icon: "car", category_id: "c22", vehicle_id: null, default_amount: 400, payer_id: "u2", shared: false, notes: "Tuk Tuk — morning" },
   { id: "qt6", kind: "instant", label: "Bus", icon: "bus", category_id: "c22", vehicle_id: null, default_amount: 100, payer_id: "u2", shared: false, notes: "Bus — evening" },
 ];
